@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopify Store Checker</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2rem;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1rem;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .input-field:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .check-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .check-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .check-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: left;
+        }
+
+        .result.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .result.failure {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            color: white;
+        }
+
+        .result.error {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            color: #333;
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .result-icon {
+            font-size: 1.5rem;
+        }
+
+        .result-details {
+            line-height: 1.6;
+        }
+
+        .confidence-bar {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            height: 8px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: white;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+
+        .reasons {
+            margin-top: 15px;
+        }
+
+        .reason-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        .tab-navigation {
+            display: flex;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #f8f9fa;
+            padding: 4px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 8px;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-btn:hover:not(.active) {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .textarea-field {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .batch-results {
+            margin-top: 30px;
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .results-section {
+            margin-top: 20px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .url-list {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .url-item {
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #ddd;
+            font-size: 0.9rem;
+            word-break: break-all;
+        }
+
+        .url-item.non-shopify {
+            border-left-color: #ff6b6b;
+        }
+
+        .url-item.shopify {
+            border-left-color: #11998e;
+        }
+
+        .url-item.error {
+            border-left-color: #ffa726;
+        }
+
+        .batch-progress {
+            margin: 20px 0;
+        }
+
+        .progress-container {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .progress-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .progress-stats {
+            display: flex;
+            gap: 15px;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            height: 12px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .current-url {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+            word-break: break-all;
+        }
+
+        .footer {
+            margin-top: 40px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <i class="fab fa-shopify"></i>
+        </div>
+        
+        <h1>Shopify Store Checker</h1>
+        <p class="subtitle">Kiểm tra xem website có phải là cửa hàng Shopify hay không</p>
+        
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab('single')">
+                <i class="fas fa-link"></i>
+                Kiểm tra đơn lẻ
+            </button>
+            <button class="tab-btn" onclick="switchTab('batch')">
+                <i class="fas fa-list"></i>
+                Kiểm tra hàng loạt
+            </button>
+        </div>
+        
+        <!-- Single URL Check -->
+        <div id="singleTab" class="tab-content active">
+            <div class="input-group">
+                <input 
+                    type="url" 
+                    id="urlInput" 
+                    class="input-field" 
+                    placeholder="Nhập URL website (vd: example.com hoặc https://example.com)"
+                    autocomplete="off"
+                >
+            </div>
+            
+            <button id="checkBtn" class="check-btn">
+                <i class="fas fa-search"></i>
+                Kiểm tra
+            </button>
+        </div>
+        
+        <!-- Batch URL Check -->
+        <div id="batchTab" class="tab-content">
+            <div class="input-group">
+                <textarea 
+                    id="urlsInput" 
+                    class="input-field textarea-field" 
+                                         placeholder="Nhập danh sách URLs, mỗi URL một dòng:&#10;example1.com&#10;https://example2.com&#10;shop.example3.com&#10;&#10;Không giới hạn số lượng URLs"
+                    rows="8"
+                ></textarea>
+            </div>
+            
+            <button id="checkBatchBtn" class="check-btn">
+                <i class="fas fa-search"></i>
+                Kiểm tra hàng loạt
+            </button>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #666;">Đang kiểm tra website...</p>
+        </div>
+        
+        <div id="batchProgress" class="batch-progress" style="display: none;">
+            <div class="progress-container">
+                <div class="progress-header">
+                    <h3><i class="fas fa-tasks"></i> Đang xử lý hàng loạt</h3>
+                    <div class="progress-stats">
+                        <span id="progressText">0 / 0</span>
+                        <span id="progressPercent">0%</span>
+                    </div>
+                </div>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+                <div class="current-url">
+                    <i class="fas fa-link"></i>
+                    <span id="currentUrl">Đang chuẩn bị...</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="result" class="result">
+            <div class="result-header">
+                <i id="resultIcon" class="result-icon"></i>
+                <span id="resultTitle"></span>
+            </div>
+            <div id="resultDetails" class="result-details"></div>
+        </div>
+        
+        <div id="batchResults" class="batch-results" style="display: none;">
+            <div class="summary-card">
+                <h3><i class="fas fa-chart-pie"></i> Tổng quan kết quả</h3>
+                <div class="summary-stats" id="summaryStats"></div>
+            </div>
+            
+            <div class="results-section" id="nonShopifySection" style="display: none;">
+                <div class="section-header">
+                    <i class="fas fa-times-circle" style="color: #ff6b6b;"></i>
+                    <span>Không phải Shopify (<span id="nonShopifyCount">0</span>)</span>
+                </div>
+                <div class="url-list" id="nonShopifyList"></div>
+            </div>
+            
+            <div class="results-section" id="shopifySection" style="display: none;">
+                <div class="section-header">
+                    <i class="fas fa-check-circle" style="color: #11998e;"></i>
+                    <span>Cửa hàng Shopify (<span id="shopifyCount">0</span>)</span>
+                </div>
+                <div class="url-list" id="shopifyList"></div>
+            </div>
+            
+            <div class="results-section" id="errorSection" style="display: none;">
+                <div class="section-header">
+                    <i class="fas fa-exclamation-triangle" style="color: #ffa726;"></i>
+                    <span>Lỗi kết nối (<span id="errorCount">0</span>)</span>
+                </div>
+                <div class="url-list" id="errorList"></div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><i class="fas fa-info-circle"></i> Công cụ này kiểm tra các dấu hiệu đặc trưng của Shopify như domain, headers, meta tags và scripts.</p>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const urlInput = document.getElementById('urlInput');
+        const urlsInput = document.getElementById('urlsInput');
+        const checkBtn = document.getElementById('checkBtn');
+        const checkBatchBtn = document.getElementById('checkBatchBtn');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const batchResults = document.getElementById('batchResults');
+        const resultIcon = document.getElementById('resultIcon');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultDetails = document.getElementById('resultDetails');
+
+        // Event listeners
+        checkBtn.addEventListener('click', checkWebsite);
+        checkBatchBtn.addEventListener('click', checkBatchWebsites);
+        
+        urlInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkWebsite();
+            }
+        });
+
+        // Tab switching function
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // Hide results
+            result.style.display = 'none';
+            batchResults.style.display = 'none';
+        }
+
+        // Single URL check
+        async function checkWebsite() {
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                alert('Vui lòng nhập URL website');
+                return;
+            }
+
+            // Reset UI
+            result.style.display = 'none';
+            batchResults.style.display = 'none';
+            loading.style.display = 'block';
+            checkBtn.disabled = true;
+
+            try {
+                const response = await fetch('/check', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+                displayResult(data);
+            } catch (error) {
+                displayResult({
+                    error: 'Lỗi kết nối đến server',
+                    is_shopify: false
+                });
+            } finally {
+                loading.style.display = 'none';
+                checkBtn.disabled = false;
+            }
+        }
+
+        // Batch URL check
+        async function checkBatchWebsites() {
+            const urls = urlsInput.value.trim();
+            
+            if (!urls) {
+                alert('Vui lòng nhập danh sách URLs');
+                return;
+            }
+
+            // Reset UI
+            result.style.display = 'none';
+            batchResults.style.display = 'none';
+            loading.style.display = 'none';
+            document.getElementById('batchProgress').style.display = 'block';
+            checkBatchBtn.disabled = true;
+
+            try {
+                // Bắt đầu batch processing
+                const response = await fetch('/check-batch', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ urls: urls })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    document.getElementById('batchProgress').style.display = 'none';
+                    displayResult(data);
+                    return;
+                }
+
+                // Theo dõi progress
+                const batchId = data.batch_id;
+                monitorBatchProgress(batchId);
+
+            } catch (error) {
+                document.getElementById('batchProgress').style.display = 'none';
+                displayResult({
+                    error: 'Lỗi kết nối đến server',
+                    is_shopify: false
+                });
+            } finally {
+                checkBatchBtn.disabled = false;
+            }
+        }
+
+        // Theo dõi tiến trình batch processing
+        function monitorBatchProgress(batchId) {
+            const progressInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/batch-progress/${batchId}`);
+                    const progress = await response.json();
+                    
+                    if (progress.error) {
+                        clearInterval(progressInterval);
+                        document.getElementById('batchProgress').style.display = 'none';
+                        displayResult({ error: progress.error });
+                        return;
+                    }
+
+                    // Cập nhật UI progress
+                    updateProgressUI(progress);
+
+                    // Nếu hoàn thành
+                    if (progress.completed && progress.results) {
+                        clearInterval(progressInterval);
+                        document.getElementById('batchProgress').style.display = 'none';
+                        displayBatchResults(progress.results);
+                    }
+
+                } catch (error) {
+                    clearInterval(progressInterval);
+                    document.getElementById('batchProgress').style.display = 'none';
+                    displayResult({
+                        error: 'Lỗi theo dõi tiến trình',
+                        is_shopify: false
+                    });
+                }
+            }, 500); // Cập nhật mỗi 500ms
+        }
+
+        // Cập nhật giao diện progress
+        function updateProgressUI(progress) {
+            document.getElementById('progressText').textContent = `${progress.current} / ${progress.total}`;
+            document.getElementById('progressPercent').textContent = `${progress.percentage}%`;
+            document.getElementById('progressFill').style.width = `${progress.percentage}%`;
+            document.getElementById('currentUrl').textContent = progress.current_url || 'Đang xử lý...';
+        }
+
+        // Display single result
+        function displayResult(data) {
+            result.style.display = 'block';
+            
+            if (data.error) {
+                result.className = 'result error';
+                resultIcon.className = 'result-icon fas fa-exclamation-triangle';
+                resultTitle.textContent = 'Có lỗi xảy ra';
+                resultDetails.innerHTML = `<p><strong>Lỗi:</strong> ${data.error}</p>`;
+                return;
+            }
+
+            if (data.is_shopify) {
+                result.className = 'result success';
+                resultIcon.className = 'result-icon fas fa-check-circle';
+                resultTitle.textContent = 'Đây là cửa hàng Shopify!';
+                
+                let detailsHTML = `
+                    <p><strong>Website:</strong> ${data.final_url}</p>
+                    <p><strong>Độ tin cậy:</strong> ${data.confidence}%</p>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: ${data.confidence}%"></div>
+                    </div>
+                `;
+                
+                if (data.reasons && data.reasons.length > 0) {
+                    detailsHTML += '<div class="reasons"><strong>Lý do:</strong>';
+                    data.reasons.forEach(reason => {
+                        detailsHTML += `<div class="reason-item">${reason}</div>`;
+                    });
+                    detailsHTML += '</div>';
+                }
+                
+                resultDetails.innerHTML = detailsHTML;
+            } else {
+                result.className = 'result failure';
+                resultIcon.className = 'result-icon fas fa-times-circle';
+                resultTitle.textContent = 'Không phải cửa hàng Shopify';
+                resultDetails.innerHTML = `
+                    <p><strong>Website:</strong> ${data.final_url || urlInput.value}</p>
+                    <p>Không tìm thấy dấu hiệu nào cho thấy đây là cửa hàng Shopify.</p>
+                `;
+            }
+        }
+
+        // Display batch results
+        function displayBatchResults(data) {
+            if (data.error) {
+                displayResult(data);
+                return;
+            }
+
+            batchResults.style.display = 'block';
+            
+            // Update summary stats
+            const summaryStats = document.getElementById('summaryStats');
+            summaryStats.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-number">${data.summary.total}</div>
+                    <div class="stat-label">Tổng số</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">${data.summary.shopify_count}</div>
+                    <div class="stat-label">Shopify</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">${data.summary.non_shopify_count}</div>
+                    <div class="stat-label">Không Shopify</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">${data.summary.error_count}</div>
+                    <div class="stat-label">Lỗi</div>
+                </div>
+            `;
+
+            // Show/hide sections based on results
+            showSection('nonShopifySection', data.non_shopify_urls, 'nonShopifyList', 'nonShopifyCount', 'non-shopify');
+            showSection('shopifySection', data.shopify_urls, 'shopifyList', 'shopifyCount', 'shopify');
+            showSection('errorSection', data.errors, 'errorList', 'errorCount', 'error');
+        }
+
+        // Helper function to show/hide result sections
+        function showSection(sectionId, items, listId, countId, itemClass) {
+            const section = document.getElementById(sectionId);
+            const list = document.getElementById(listId);
+            const count = document.getElementById(countId);
+            
+            if (items.length > 0) {
+                section.style.display = 'block';
+                count.textContent = items.length;
+                
+                list.innerHTML = items.map(item => {
+                    let displayText = item.original_url || item.final_url;
+                    if (item.error) {
+                        displayText += ` - ${item.error}`;
+                    } else if (item.confidence) {
+                        displayText += ` (${item.confidence}% tin cậy)`;
+                    }
+                    return `<div class="url-item ${itemClass}">${displayText}</div>`;
+                }).join('');
+            } else {
+                section.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html> 
